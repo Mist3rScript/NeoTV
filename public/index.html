@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoTV Administrator</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js (CDN for charts) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-mark"><i class="fas fa-play"></i></div>
+                    <span class="logo-text">NeoTV</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <span class="nav-label">Main</span>
+                    <a href="#" class="nav-item active" data-tab="dashboard" onclick="app.navigate('dashboard')">
+                        <i class="fas fa-th-large"></i> <span>Dashboard</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-label">Management</span>
+                    <a href="#" class="nav-item" data-tab="keys" onclick="app.navigate('keys')">
+                        <i class="fas fa-key"></i> <span>Activation Keys</span>
+                    </a>
+                    <a href="#" class="nav-item" data-tab="accounts" onclick="app.navigate('accounts')">
+                        <i class="fas fa-server"></i> <span>External Sources</span>
+                    </a>
+                    <a href="#" class="nav-item" data-tab="channels" onclick="app.navigate('channels')">
+                        <i class="fas fa-tv"></i> <span>Channel List</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-label">System</span>
+                    <a href="#" class="nav-item" data-tab="settings" onclick="app.navigate('settings')">
+                        <i class="fas fa-cog"></i> <span>Configuration</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=00f3ff&color=000" alt="Admin"
+                        class="avatar">
+                    <div class="user-details">
+                        <span class="user-name">Administrator</span>
+                        <span class="user-role">Super Admin</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <h2 id="page-title">Dashboard</h2>
+                <div class="header-actions">
+                    <div class="notif-wrapper" style="position:relative">
+                        <button class="btn-icon" onclick="app.toggleNotifications()">
+                            <i class="fas fa-bell"></i>
+                            <span id="notif-badge" class="badge hidden">0</span>
+                        </button>
+                        <div id="notif-dropdown" class="notif-dropdown hidden">
+                            <div class="notif-header">
+                                <span>System Alerts</span>
+                                <button class="btn-text" onclick="app.markRead()">Mark Read</button>
+                            </div>
+                            <div id="notif-list" class="notif-list">
+                                <!-- Items -->
+                                <div class="notif-item placeholder">No new notifications</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" onclick="app.modal.open('createKeyModal')">
+                        <i class="fas fa-plus"></i> New License
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="view active">
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                        <div class="stat-data">
+                            <span class="stat-value">--</span>
+                            <span class="stat-label">Active Users</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i class="fas fa-server"></i></div>
+                        <div class="stat-data">
+                            <span class="stat-value" id="stats-total-keys">--</span>
+                            <span class="stat-label">Sources / Keys</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i class="fas fa-signal"></i></div>
+                        <div class="stat-data">
+                            <span class="stat-value" id="stats-total-channels">--</span>
+                            <span class="stat-label">Live Channels</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Analytics Overview</h3>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="usageChart" height="80"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Keys View -->
+            <div id="view-keys" class="view">
+                <div class="card">
+                    <div class="card-header flex-between">
+                        <h3>License Management</h3>
+                        <div class="table-actions" style="display:flex; gap:10px; align-items:center;">
+                            <input type="text" id="keySearch" class="search-input" placeholder="🔍 Search keys..."
+                                onkeyup="app.filterKeys()" style="width:200px;">
+                            <button class="btn-secondary" onclick="app.modal.open('createKeyModal')">Generate
+                                Key</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Status</th>
+                                    <th>Duration</th>
+                                    <th>Device ID</th>
+                                    <th>Expiration</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keys-table-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accounts View -->
+            <div id="view-accounts" class="view">
+                <div class="card">
+                    <div class="card-header flex-between">
+                        <h3>Provider Sources</h3>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="text" id="accountSearch" class="search-input"
+                                placeholder="🔍 Search sources..." onkeyup="app.filterAccounts()" style="width:220px;">
+                            <button class="btn-primary" onclick="app.modal.open('createAccountModal')">Add
+                                Source</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Host / Server</th>
+                                    <th>Identity</th>
+                                    <th>Sync Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accounts-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Channels View -->
+            <div id="view-channels" class="view">
+                <div class="card">
+                    <div class="card-header flex-between">
+                        <h3>Channel Lineup</h3>
+                        <div class="table-actions" style="display:flex; gap:10px; align-items:center;">
+                            <input type="text" id="channelSearch" class="search-input"
+                                placeholder="🔍 Search channels..." onkeyup="app.filterChannels()" style="width:250px;">
+                            <button class="btn-primary success" onclick="app.openCatalog()">
+                                <i class="fas fa-list-ul"></i> Select from Catalog
+                            </button>
+                            <button class="btn-secondary" onclick="app.modal.open('addChannelModal')">
+                                <i class="fas fa-plus"></i> Manual Add
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="channels-folder-view" style="padding:20px;">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Pagination (hidden in folder view) -->
+                        <div id="channels-pagination" class="card-footer"
+                            style="padding:1rem; display:none; justify-content:center; gap:1rem; align-items:center">
+                            <button class="btn-secondary" id="btn-prev" onclick="app.changePage(-1)"
+                                disabled>Previous</button>
+                            <span id="page-info" style="color:var(--text-main)">Page 1</span>
+                            <button class="btn-secondary" id="btn-next" onclick="app.changePage(1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings View (Added Fix) -->
+            <div id="view-settings" class="view">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>System Configuration</h3>
+                    </div>
+                    <div class="card-body" style="padding:40px; text-align:center; color:#666;">
+                        <i class="fas fa-cogs" style="font-size:3rem; margin-bottom:20px; color:#333;"></i>
+                        <p>Settings panel is under construction.</p>
+                        <p style="font-size:0.9rem;">You can manage Keys, Accounts, and Channels from their respective
+                            tabs.</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Generate Key Modal -->
+    <div class="modal-overlay" id="createKeyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Generate License Key</h3>
+                <button class="close-btn" onclick="app.modal.close('createKeyModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Admin Password</label>
+                    <input type="password" id="keyAdminPass" class="form-control" placeholder="Required for security">
+                </div>
+                <div class="form-group">
+                    <label>Duration (Days)</label>
+                    <input type="number" id="keyDuration" class="form-control" value="30">
+                </div>
+                <div id="new-key-display" class="alert-box success hidden">
+                    <div class="key-code" id="generatedKeyDisplay"></div>
+                    <small>Click to copy</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="app.modal.close('createKeyModal')">Cancel</button>
+                <button class="btn-primary" onclick="app.generateKey()">Generate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Account Modal -->
+    <div class="modal-overlay" id="createAccountModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add New Provider Source</h3>
+                <button class="close-btn" onclick="app.modal.close('createAccountModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Source Type</label>
+                    <select id="accType" class="form-control" onchange="app.toggleAccountFields()">
+                        <option value="m3u">Xtream Codes / M3U</option>
+                        <option value="stalker">Stalker Portal (MAG)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Host / Portal URL</label>
+                    <input type="text" id="accHost" class="form-control" placeholder="http://server:port">
+                </div>
+
+                <div id="field-userpass">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="accUser" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="text" id="accPass" class="form-control">
+                    </div>
+                </div>
+
+                <div id="field-mac" class="hidden">
+                    <div class="form-group">
+                        <label>MAC Address</label>
+                        <input type="text" id="accMac" class="form-control" placeholder="00:1A:79:...">
+                    </div>
+                </div>
+
+                <!-- Hidden duration for now -->
+                <input type="hidden" id="accDuration" value="999">
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="app.modal.close('createAccountModal')">Cancel</button>
+                <button class="btn-primary" onclick="app.createAccount()">Add Source</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Channel Modal (Manual) -->
+    <div class="modal-overlay" id="addChannelModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add New Channel (Manual)</h3>
+                <button class="close-btn" onclick="app.modal.close('addChannelModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Admin Password</label>
+                    <input type="password" id="channelAdminPass" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Channel Name</label>
+                    <input type="text" id="channelName" class="form-control" placeholder="e.g. CNN">
+                </div>
+                <div class="form-group">
+                    <label>Stream URL</label>
+                    <input type="text" id="streamUrl" class="form-control" placeholder="http://...">
+                </div>
+                <div class="form-group">
+                    <label>Logo URL</label>
+                    <input type="text" id="logoUrl" class="form-control" placeholder="http://...">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="app.modal.close('addChannelModal')">Cancel</button>
+                <button class="btn-primary" onclick="app.addChannel()">Confirm Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Catalog Modal (Professional Selector) -->
+    <div class="modal-overlay" id="catalogModal">
+        <div class="modal" style="width: 800px; max-width: 95vw;">
+            <div class="modal-header">
+                <h3>Curate Channels from Catalog</h3>
+                <button class="close-btn" onclick="app.modal.close('catalogModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="display:flex; flex-direction:column; gap:15px; height: 60vh;">
+                <!-- Filters -->
+                <div style="display:flex; gap:10px;">
+                    <select id="catSource" class="form-control" style="width:200px" onchange="app.loadCatalog()">
+                        <option value="">All Sources</option>
+                        <!-- Populated by JS -->
+                    </select>
+                    <input type="text" id="catSearch" class="form-control" placeholder="Search channels (e.g. beIN)..."
+                        onkeyup="app.loadCatalogDelayed()">
+                </div>
+
+                <!-- List -->
+                <div class="catalog-list-wrapper"
+                    style="flex:1; border:1px solid #333; border-radius:6px; overflow-y:auto; background:#111;">
+                    <table class="data-table" style="width:100%">
+                        <thead style="position:sticky; top:0; background:#222; z-index:10;">
+                            <tr>
+                                <th width="40"><input type="checkbox" onchange="app.toggleSelectAll(this)"></th>
+                                <th>Channel Name</th>
+                                <th>Original Category</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalog-table-body"></tbody>
+                    </table>
+                </div>
+
+                <!-- Footer / Target -->
+                <div style="display:flex; gap:10px; align-items:center; border-top:1px solid #333; paddingTop:15px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.8rem; color:#888;">Target Group / Category:</label>
+                        <input type="text" id="targetCategory" class="form-control" placeholder="e.g. Sports VIP">
+                    </div>
+                    <div style="text-align:right">
+                        <span id="select-count" style="margin-right:15px; color:#666; font-size:0.9rem">0
+                            Selected</span>
+                        <button class="btn-primary" onclick="app.curateChannels()">Add to Live Lineup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Channel Modal (Streams Manager) -->
+    <div class="modal-overlay" id="editChannelModal">
+        <div class="modal" style="width: 650px; max-width: 95vw;">
+            <div class="modal-header">
+                <h3><i class="fas fa-layer-group" style="color:var(--primary); margin-right:8px;"></i> Manage Channel
+                    Streams</h3>
+                <button class="close-btn" onclick="app.modal.close('editChannelModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editChId">
+                <div class="form-group">
+                    <label style="font-size:0.8rem; color:#888; text-transform:uppercase; letter-spacing:0.5px;">Channel
+                        Name</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="editChName" class="form-control"
+                            style="background:#222; color:#fff; border:1px solid #444; font-weight:600; flex:1;">
+                        <button class="btn-secondary" onclick="app.saveChannelName()" style="min-width:80px;">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                    </div>
+                </div>
+
+                <div class="streams-list" style="margin: 20px 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <label style="font-size:0.85rem; color:#aaa; font-weight:600;">
+                            <i class="fas fa-stream"></i> Attached Streams
+                        </label>
+                        <span style="font-size:0.7rem; color:#666; font-style:italic;">Drag to reorder (coming
+                            soon)</span>
+                    </div>
+                    <div id="streams-container" style="max-height:300px; overflow-y:auto;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="add-stream-section">
+                    <label style="font-size:0.85rem; font-weight:600; color:#ddd; display:block; margin-bottom:10px;">
+                        <i class="fas fa-plus-circle" style="color:var(--primary);"></i> Add Another Stream
+                    </label>
+
+                    <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <input type="text" id="newStreamUrl" class="form-control" placeholder="Paste stream URL here..."
+                            style="flex:1;">
+                        <button class="btn-secondary" onclick="app.addStreamToChannel()" style="min-width:80px;">
+                            <i class="fas fa-check"></i> Add
+                        </button>
+                    </div>
+
+                    <div style="text-align:center; margin-top:10px; padding-top:10px; border-top:1px solid #333;">
+                        <button class="btn-secondary" onclick="app.openCatalogBrowser()"
+                            style="background:#222; border:1px solid var(--primary); color:var(--primary); width:100%;">
+                            <i class="fas fa-search-plus"></i> Browse Catalog (Smart Select)
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="app.modal.close('editChannelModal')">
+                    <i class="fas fa-check-circle"></i> Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Category Modal -->
+    <div class="modal-overlay" id="editCategoryModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Category</h3>
+                <button class="close-btn" onclick="app.modal.close('editCategoryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editCatName">
+                <div class="form-group">
+                    <label>Category Name</label>
+                    <input type="text" id="editCatNameDisplay" class="form-control" disabled
+                        style="background:#222; color:#888;">
+                </div>
+                <div class="form-group">
+                    <label>Folder Logo URL</label>
+                    <input type="text" id="editCatLogo" class="form-control" placeholder="https://example.com/logo.png">
+                    <small style="color:#666;">Leave empty to use default icon</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="app.saveCategory()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Catalog Browser Modal (Professional) -->
+    <div class="modal-overlay" id="catalogBrowserModal">
+        <div class="modal" style="width: 900px; max-width: 95vw;">
+            <div class="modal-header">
+                <h3><i class="fas fa-layer-group" style="color:var(--primary);"></i> Catalog Stream Browser</h3>
+                <button class="close-btn" onclick="app.modal.close('catalogBrowserModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height:70vh; overflow-y:auto;">
+                <div style="background:#1a1a1a; padding:15px; border-radius:8px; margin-bottom:15px;">
+                    <div style="font-size:0.9rem; color:#aaa; margin-bottom:8px;">
+                        Searching for: <strong id="catBrowseQuery" style="color:var(--primary);">...</strong>
+                    </div>
+                    <div style="font-size:0.75rem; color:#666;">
+                        Select streams from different providers to add as backups
+                    </div>
+                </div>
+
+                <div id="catalogBrowserResults"
+                    style="display:grid; grid-template-columns:repeat(auto-fill, minmax(350px, 1fr)); gap:12px;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="catBrowseCount" style="margin-right:auto; color:#888;">0 selected</span>
+                <button class="btn-ghost" onclick="app.modal.close('catalogBrowserModal')">Cancel</button>
+                <button class="btn-primary" onclick="app.addSelectedFromCatalog()">
+                    <i class="fas fa-plus"></i> Add Selected Streams
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
