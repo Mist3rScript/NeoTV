@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path'); // Required for path.join() used below
 const db = require('./db');
 require('dotenv').config();
 const fetch = require('node-fetch'); // Ensure we use node-fetch for stream piping compatibility
