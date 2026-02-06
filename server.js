@@ -13,19 +13,20 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public'))); // Serve admin panel files
 
 // Create tables on startup
-const fs = require('fs');
-const path = require('path');
-const schemaPath = path.join(__dirname, 'schema.sql');
-const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+// Create tables on startup (DISABLED FOR VERCEL STABILITY - Schema applied manually)
+// const fs = require('fs');
+// const path = require('path');
+// const schemaPath = path.join(__dirname, 'schema.sql');
+// const schemaSql = fs.readFileSync(schemaPath, 'utf8');
 
-(async () => {
-    try {
-        await db.query(schemaSql);
-        console.log('Database tables verified/created.');
-    } catch (err) {
-        console.error('Error initializing database:', err);
-    }
-})();
+// (async () => {
+//     try {
+//         await db.query(schemaSql);
+//         console.log('Database tables verified/created.');
+//     } catch (err) {
+//         console.error('Error initializing database:', err);
+//     }
+// })();
 
 // Basic Health Check (Explicitly serve index.html for Vercel)
 app.get('/', (req, res) => {
@@ -657,10 +658,14 @@ async function runAutoCheck() {
 }
 
 // Run every 30 minutes (1800000 ms) - For demo we can trigger it too
-setInterval(runAutoCheck, 30 * 60 * 1000);
-// Run once on start after 10 sec
-setTimeout(runAutoCheck, 10000);
-
+// DISABLED ON VERCEL to prevent function timeout/crashes
+if (!process.env.VERCEL) {
+    setInterval(runAutoCheck, 30 * 60 * 1000);
+    // Run once on start after 10 sec
+    setTimeout(runAutoCheck, 10000);
+} else {
+    console.log('[Vercel] Background auto-check tasks disabled in serverless mode.');
+}
 
 // NOTIFICATIONS ROUTES
 app.get('/api/admin/notifications', async (req, res) => {
